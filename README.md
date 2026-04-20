@@ -1,35 +1,69 @@
-# Brute Force Attack Simulation
+# Web Application Brute Force Attack Simulator
 
-An educational cybersecurity project simulating a web application under a brute-force attack.
+An educational cybersecurity project that demonstrates the vulnerabilities of unprotected web servers against brute-force attacks and contrasts them with a secured system utilizing defensive countermeasures like rate limiting.
 
-## Project Structure
+## 🚀 Project Overview
 
-This project consists of three main parts:
-- **`vulnerable/`**: A poorly secured web application backend and frontend. Contains vulnerabilities tailored for brute forcing.
-- **`secure/`**: A secure version of the web application built with industry-standard defenses (rate limiting, account lockouts).
-- **`attack/`**: Contains the Attack Server and UI panel to launch configurable dictionary and combo brute-force attacks against target URLs.
+The project is split into three main, independent modules:
 
-## Quick Start
+1. **Vulnerable System (`vulnerable/`)**: An unprotected web server and UI. It processes every login request relentlessly, making it highly susceptible to brute forcing.
+2. **Secure System (`secure/`)**: A hardened web server utilizing industry-standard defenses to catch, throttle, and ban attackers when it detects malicious rapid login attempts.
+3. **Attack Module (`attack/`)**: An interactive dashboard and attack-dispatch server that allows you to configure targets, load dictionary patterns, and visually monitor brute-force strikes in real-time.
 
-We have provided a unified startup script to make running everything much easier! The startup script will automatically install missing `node_modules` across all folders and start all the backends and Web UIs simultaneously.
+---
 
-1. Give execution permission to the script (only needed once):
+## 🛠 Prerequisites
+
+Before starting, ensure you have:
+* **Node.js** installed on your system.
+* A wordlist/dictionary file like the famous `rockyou.txt`. Place your downloaded `rockyou.txt` inside the `attack/attack-server/` directory! *(Note: This file is ignored by Git due to its massive file size).*
+
+---
+
+## 💻 Installation & Setup
+
+We have created an automated setup script that installs all dependencies across the entire project and resolves security vulnerabilities!
+
+1. Open your terminal in the root folder of this repository.
+2. Make sure the scripts are executable:
    ```bash
-   chmod +x start.sh
+   chmod +x *.sh
    ```
-2. Run the script:
+3. Run the installer:
    ```bash
-   ./start.sh
+   ./install.sh
    ```
 
-*(Press `Ctrl + C` in the terminal to stop all running servers later on).*
+---
 
-## Git / Branch Updates
-To commit your changes to GitHub without uploading large files (our `.gitignore` prevents uploading `node_modules` and `rockyou.txt`), simply run the following commands in your terminal:
+## 🎮 How to Run the Modules
 
+Instead of dealing with overlapping ports or tangled logs, the project relies on independent launcher scripts. Open a **new terminal tab** for whichever module you want to run:
+
+### 1. The Attack Dashboard
+To launch the Attack Server and UI panel:
 ```bash
-git add .
-git commit -m "Merged index files and added start script"
-git push
+./start_attack.sh
 ```
-If you are on a specific branch and pushing for the first time, you might need to use `git push -u origin branch_name` (e.g., `git push -u origin main`).
+*(The UI will open on Port 5000)*
+
+### 2. The Vulnerable Target
+To launch the unprotected authentication backend and frontend:
+```bash
+./start_vulnerable.sh
+```
+*(The UI will open on Port 5002)*
+
+### 3. The Secured Target
+To launch the rate-limited, hardened backend and frontend:
+```bash
+./start_secure.sh
+```
+*(The UI will open on Port 5001)*
+
+> **Note:** To stop any running module, simply navigate to its terminal tab and press `Ctrl + C`.
+
+---
+
+## 📖 Educational Objective
+This project is **strictly for educational demonstration** of how basic credential stuffing attacks operate behind the scenes, and why rate-limiting is absolutely mandatory for any authentication endpoint.
