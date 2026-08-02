@@ -8,32 +8,28 @@ function App() {
   const [dictionary, setDictionary] = useState('rockyou.txt')
   const [characters, setCharacters] = useState('abcdefghijklmnopqrstuvwxyz0123456789')
   const [length, setLength] = useState(4)
-  
+
   const [logs, setLogs] = useState([])
   const [isRunning, setIsRunning] = useState(false)
   const logsEndRef = useRef(null)
 
-  // Poll the backend for logs and status every 500ms
   useEffect(() => {
     const fetchStatus = async () => {
       try {
         const statusRes = await fetch('http://localhost:3001/api/status')
         const statusData = await statusRes.json()
         setIsRunning(statusData.isRunning)
-        
+
         const logsRes = await fetch('http://localhost:3001/api/logs')
         const logsData = await logsRes.json()
         setLogs(logsData.logs || [])
-      } catch (err) {
-        // If the server goes down or isn't started yet, don't crash the UI
-      }
+      } catch (err) {}
     }
 
     const interval = setInterval(fetchStatus, 500)
     return () => clearInterval(interval)
   }, [])
 
-  // Auto-scroll the terminal down
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [logs])
@@ -77,12 +73,12 @@ function App() {
       <main>
         <div className="config-panel">
           <h2>Target Configuration</h2>
-          
+
           <div className="form-group">
             <label>Target Form URL</label>
-            <input 
-              type="text" 
-              value={targetUrl} 
+            <input
+              type="text"
+              value={targetUrl}
               onChange={(e) => setTargetUrl(e.target.value)}
               disabled={isRunning}
             />
@@ -90,9 +86,9 @@ function App() {
 
           <div className="form-group">
             <label>Target Username(s) (comma separated)</label>
-            <input 
-              type="text" 
-              value={targetUsername} 
+            <input
+              type="text"
+              value={targetUsername}
               onChange={(e) => setTargetUsername(e.target.value)}
               disabled={isRunning}
               placeholder="e.g. admin, test, user"
@@ -101,8 +97,8 @@ function App() {
 
           <div className="form-group">
             <label>Attack Type</label>
-            <select 
-              value={attackType} 
+            <select
+              value={attackType}
               onChange={(e) => setAttackType(e.target.value)}
               disabled={isRunning}
             >
@@ -114,8 +110,8 @@ function App() {
           {attackType === 'dictionary' ? (
             <div className="form-group">
               <label>Dictionary / Wordlist</label>
-              <select 
-                value={dictionary} 
+              <select
+                value={dictionary}
                 onChange={(e) => setDictionary(e.target.value)}
                 disabled={isRunning}
               >
@@ -127,20 +123,20 @@ function App() {
             <>
               <div className="form-group">
                 <label>Characters</label>
-                <input 
-                  type="text" 
-                  value={characters} 
+                <input
+                  type="text"
+                  value={characters}
                   onChange={(e) => setCharacters(e.target.value)}
                   disabled={isRunning}
                 />
               </div>
               <div className="form-group">
                 <label>Length</label>
-                <input 
-                  type="number" 
+                <input
+                  type="number"
                   min="1"
                   max="10"
-                  value={length} 
+                  value={length}
                   onChange={(e) => setLength(parseInt(e.target.value) || 1)}
                   disabled={isRunning}
                 />
@@ -176,13 +172,12 @@ function App() {
               <div className="terminal-content">
                 {logs.length === 0 && <span className="placeholder">Awaiting command payload...</span>}
                 {logs.map((log, index) => {
-                
                   let logClass = "log-line"
                   if (log.includes("SUCCESS!")) logClass += " success glow"
                   else if (log.includes("ERROR:") || log.includes("[-]")) logClass += " error"
                   else if (log.includes("[Attempt")) logClass += " attempt"
                   else logClass += " info"
-                  
+
                   return (
                     <div key={index} className={logClass}>
                       <span className="prompt-arrow">❯ </span>

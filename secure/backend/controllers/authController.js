@@ -3,7 +3,7 @@ import User from '../models/User.js'
 
 export const register = async (req, res) => {
     const { username, password } = req.body
-    
+
     if (!username || !password) {
         return res.status(400).json({ message: "Username and password are required" })
     }
@@ -14,11 +14,10 @@ export const register = async (req, res) => {
             return res.status(409).json({ message: "User already exists" })
         }
 
-        // Hash password with argon2 (protects DB from brute force & leaks)
         const hashedPassword = await argon2.hash(password)
-        
+
         await User.create({ username, password: hashedPassword })
-        
+
         res.status(201).json({ message: "Registration successful" })
     } catch (error) {
         console.error("Registration error:", error)
@@ -28,7 +27,7 @@ export const register = async (req, res) => {
 
 export const secureLogin = async (req, res) => {
     const { username, password } = req.body
-    
+
     if (!username || !password) {
         return res.status(400).json({ message: "Username and password are required" })
     }
@@ -39,7 +38,6 @@ export const secureLogin = async (req, res) => {
             return res.status(401).json({ message: "Invalid credentials" })
         }
 
-        // Verify hash
         const isPasswordValid = await argon2.verify(user.password, password)
 
         if (isPasswordValid) {

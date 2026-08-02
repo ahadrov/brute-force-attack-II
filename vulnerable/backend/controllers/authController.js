@@ -2,7 +2,7 @@ import User from '../models/User.js'
 
 export const register = async (req, res) => {
     const { username, password } = req.body
-    
+
     if (!username || !password) {
         return res.status(400).json({ message: "Username and password are required" })
     }
@@ -13,9 +13,8 @@ export const register = async (req, res) => {
             return res.status(409).json({ message: "User already exists" })
         }
 
-        // PURE VULNERABLE: Save password as plain-text
         await User.create({ username, password })
-        
+
         res.status(201).json({ message: "Registration successful" })
     } catch (error) {
         console.error("Registration error:", error)
@@ -23,10 +22,9 @@ export const register = async (req, res) => {
     }
 }
 
-// Vulnerable Login Endpoint
 export const login = async (req, res) => {
     const { username, password } = req.body
-    
+
     if (!username || !password) {
         return res.status(400).json({ message: "Username and password are required" })
     }
@@ -37,7 +35,6 @@ export const login = async (req, res) => {
             return res.status(401).json({ message: "Login failed" })
         }
 
-        // PURE VULNERABLE: Compare plain-text password
         const isPasswordValid = (user.password === password)
 
         if (isPasswordValid) {
