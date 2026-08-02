@@ -42,7 +42,42 @@ async function runAttack(targetUrl, targetUsername, options) {
   }
   
   const startTime = Date.now();
-  
+
+  // ── Pre-flight connectivity check ──────────────────────────────────────────
+  // Try hitting the URL once before loading any wordlist.
+  // This catches wrong URLs, typos, or servers that aren't running.
+  addLog(`Checking target URL reachability...`);
+  try {
+    await fetch(targetUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: '__probe__', password: '__probe__' }),
+      signal: AbortSignal.timeout(5000), // 5-second timeout
+    });
+    addLog(`Target URL is reachable. Starting attack...`);
+  } catch (probeErr) {
+    const isNetworkError =
+      probeErr.cause?.code === 'ECONNREFUSED' ||
+      probeErr.cause?.code === 'ENOTFOUND' ||
+      probeErr.cause?.code === 'ECONNRESET' ||
+      probeErr.name === 'TimeoutError' ||
+      probeErr.message?.includes('fetch failed');
+
+    if (isNetworkError) {
+      addLog(`\n[!] ERROR: Target URL is unreachable.`);
+      addLog(`[!] URL: ${targetUrl}`);
+      addLog(`[!] Reason: ${probeErr.cause?.message || probeErr.message}`);
+      addLog(`[!] Make sure the target server is running and the URL is correct.`);
+      addLog(`[!] Attack aborted — no passwords were tried.`);
+      isRunning = false;
+      return;
+    }
+    // If the server responded with an error status (401, 404, etc.) that's fine —
+    // it means the server IS reachable, the probe just got rejected as expected.
+    addLog(`Target URL is reachable (responded to probe). Starting attack...`);
+  }
+  // ───────────────────────────────────────────────────────────────────────────
+
   try {
     let wordsIterable;
 
@@ -131,9 +166,26 @@ async function runAttack(targetUrl, targetUsername, options) {
                 return; // Break completely out of the attack loop
               }
           } catch (reqErr) {
-              addLog(`[-] Error attacking on attempt ${count}: ${reqErr.message}`);
-              // Don't kill the whole loop for one network error, wait a sec and try next
-              await new Promise(resolve => setTimeout(resolve, 1000));
+              // Detect hard network errors: wrong URL, server went down, DNS failure, etc.
+              const isNetworkError =
+                reqErr.cause?.code === 'ECONNREFUSED' ||
+                reqErr.cause?.code === 'ENOTFOUND' ||
+                reqErr.cause?.code === 'ECONNRESET' ||
+                reqErr.name === 'TimeoutError' ||
+                reqErr.message?.includes('fetch failed');
+
+              if (isNetworkError) {
+                addLog(`\n[!] NETWORK ERROR: Lost connection to target server.`);
+                addLog(`[!] URL: ${targetUrl}`);
+                addLog(`[!] Reason: ${reqErr.cause?.message || reqErr.message}`);
+                addLog(`[!] The server may have gone down or the URL is wrong.`);
+                addLog(`[!] Aborting attack.`);
+                isRunning = false;
+                return; // Stop the entire attack immediately
+              }
+
+              // Transient error (e.g. one-off timeout) — log and skip this attempt
+              addLog(`[-] Attempt ${count} failed (transient): ${reqErr.message} — skipping.`);
           }
       }
 
