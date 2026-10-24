@@ -1,137 +1,85 @@
 # WEB APPLICATION BRUTE FORCE ATTACK SIMULATOR
 
-**Project Report | Educational Cybersecurity Demonstration**  
+**Project Report | Educational Cybersecurity Demonstration**
+
 **Team:** Anmol Khare, Pushpendra Shivhare, Vansh Ray Jain, Dhruv Shrivastava  
 **Submitted to:** Abhay Deep Seth  
 
----
-
 ### 1. Introduction
-A brute-force attack repeatedly submits candidate passwords to an authentication endpoint until a valid credential is found or attempts are stopped. This project demonstrates the contrast between an intentionally vulnerable login backend and an enterprise-hardened backend incorporating multi-layered defense mechanisms. A live dashboard allows users to configure attack parameters, select a dictionary or permutation mode, monitor real-time attack traffic, and inspect how defenses intervene. The project is designed strictly for educational demonstrations within an isolated local environment owned and authorized by the operator.
-
----
+A brute-force attack repeatedly submits candidate passwords to an authentication endpoint until a valid credential is found or attempts are stopped. This project demonstrates the difference between an intentionally vulnerable login backend and a secured backend. A dashboard lets users configure a target, select a dictionary or generated-password mode, monitor logs, and stop the simulation. The project is intended only for an isolated system owned or explicitly authorized by the operator.
 
 ### 2. Objectives
-* Demonstrate how unrestricted login endpoints and plain-text storage leave applications critically exposed to automated attacks.
-* Compare raw-string storage with memory-hard **Argon2** cryptographic password hashing.
-* Illustrate single-source request throttling using IP-based rate limiting (**HTTP 429 Too Many Requests**).
-* Implement and validate an **Account Lockout Policy** (**HTTP 423 Locked**) to neutralize distributed brute-force attacks across rotating proxies and botnets.
-* Deploy an **Interactive CAPTCHA & Bot Protection Engine** (**HTTP 403 Forbidden**) across both backend verification and frontend UI to halt automated scripts.
-* Provide a live dashboard with configuration controls, status monitoring, and real-time defense detection logs.
-* Deliver an intuitive user interface with active visual feedback, including dynamic CAPTCHA challenge rendering and real-time account lockout countdown timers.
-
----
+* Demonstrate how unrestricted login attempts expose weak authentication systems.
+* Compare plain-text password storage with Argon2 password hashing.
+* Show IP-based rate limiting and HTTP 429 responses under repeated login attempts.
+* Demonstrate account lockout policies and HTTP 423 responses under repeated failures.
+* Show interactive CAPTCHA bot challenges and HTTP 403 responses halting automated attacks.
+* Provide a live dashboard with configuration controls, status, and timestamped logs.
+* Explain practical controls for reducing brute-force and credential-stuffing risk.
 
 ### 3. Technology Stack
-* **Runtime & APIs:** Node.js (v18+), Express.js (v5).
-* **Database:** MongoDB with Mongoose (v9).
-* **Security & Cryptography:** `argon2` (Password Hashing Competition winner), `express-rate-limit` (middleware), Node.js native `crypto` (dynamic SVG CAPTCHA generator).
-* **Frontend:** React (v19), Vite (v8), Vanilla CSS (glassmorphic theme).
-* **Attack Engine:** Node.js HTTP dispatcher utilizing native `fetch` with streaming log endpoints and automated defense status categorization.
-
----
+Node.js 18+, Express.js 5, MongoDB with Mongoose 9, Argon2, express-rate-limit, React 19, and Vite 8, and dynamic SVG CAPTCHA generator. The attack server uses Node.js fetch to send HTTP POST requests to a selected login endpoint. MongoDB stores the user records.
 
 ### 4. System Architecture
-The system consists of three independent, runnable modules:
-
-1. **Vulnerable Module:** An Express authentication API and MongoDB database where credentials are saved and evaluated in plain text with no rate limiting, lockout, or bot challenge.
-2. **Secure Module:** A multi-tier hardened Express API and React client featuring Argon2 password hashing, IP rate limiting (5 attempts/min), MongoDB-backed account lockout (15-minute cooldown upon 5 consecutive failures), and dynamic SVG CAPTCHA bot challenges.
-3. **Attack Module:** A React visualizer dashboard paired with an Express attack dispatcher that fires programmatic candidate credentials, monitors reachability, and categorizes HTTP response codes in real time.
+The system contains three modules. (1) Vulnerable module: Express authentication API and MongoDB database; passwords are stored and compared as plain text, with no login rate limiter or CAPTCHA. (2) Secure module: a separate Express API and database; passwords are hashed during registration with Argon2 and verified during login, while express-rate-limit allows five login attempts per IP within a 60-second window, an account lockout policy locks accounts after five failed attempts (HTTP 423), and an interactive SVG CAPTCHA blocks automated bots (HTTP 403). (3) Attack module: a React dashboard communicates with a Node.js dispatch API, which sends candidate credentials to the selected target and records status/log messages.
 
 | Service | Port | Purpose |
-|---|---|---|
-| **Attack Dashboard** | `5000` | React attack control panel and live attack terminal log. |
-| **Attack API Server** | `3001` | Dispatcher that runs attacks, streams logs, and detects 429, 423, and 403 defenses. |
-| **Vulnerable Backend** | `3000` | Unprotected authentication API (plain text, no rate limit). |
-| **Vulnerable Web UI** | `5002` *(launch script)* | React Vite interface for testing vulnerable authentication. |
-| **Secure Backend** | `4000` | Hardened API with Argon2 hashing, IP rate limiting, account lockout, and CAPTCHA service. |
-| **Secure Web UI** | `5001` *(launch script)* | React Vite interface with interactive CAPTCHA, challenge refresh (`🔄`), and live lockout timer. |
+| :--- | :--- | :--- |
+| Attack dashboard | 5000 | React configuration and live log interface |
+| Attack API server | 3001 | Starts/stops simulation; exposes status and logs |
+| Vulnerable backend | 3000 | Unprotected login API |
+| Vulnerable web UI | 5002 (launch script) | Vite frontend development server |
+| Secure backend | 4000 | Argon2 authentication, rate limiting, lockout, and CAPTCHA |
+| Secure web UI | 5001 (launch script) | Vite frontend development server with CAPTCHA and lockout UI |
 
-> **Port Note:** The start scripts explicitly pass ports 5000, 5001, and 5002 to the three Vite development servers. The launch scripts are the authoritative source of truth for port mapping during local execution.
+Port note: the start scripts explicitly pass ports 5000, 5001, and 5002 to the three Vite servers. The Vite configuration files do not all define those same ports directly, so the launch scripts are the source of truth when starting the project as documented.
 
 ---
+*Brute Force Attack Simulator | Educational Use Only*
+
+<div style="page-break-after: always;"></div>
 
 ### 5. Main Implementation
 
-#### Vulnerable Authentication
-The vulnerable registration controller persists incoming passwords directly as plain-text strings in MongoDB. The login controller searches for the user and performs direct string comparison (`user.password === password`). There is no rate limiter, lockout mechanism, or bot verification. This setup illustrates the catastrophic risks of unthrottled endpoints and database leaks.
+**Vulnerable authentication**  
+The registration controller saves the submitted password directly. Login retrieves the user and compares the submitted password with the stored string. There is no rate-limiting middleware on this route, making repeated attempts possible. This behavior is intentionally insecure and must not be used for real accounts.
 
-#### Secure Authentication
-The hardened backend incorporates defense-in-depth:
-* **Argon2 Password Hashing:** Replaces plain text with memory-hard hashing resistant to GPU and ASIC acceleration.
-* **IP-Based Rate Limiting:** Configured via `express-rate-limit` to restrict requests to 5 per 60 seconds per IP, returning `HTTP 429 Too Many Requests`.
-* **Account Lockout Policy:** The Mongoose `User` schema tracks `failedLoginAttempts` and `lockUntil`. Reaching 5 consecutive failed attempts locks the specific user account for 15 minutes, returning `HTTP 423 Locked`.
-* **Dynamic CAPTCHA Service:** A standalone SVG generation engine creates noise-distorted alphanumeric challenges (`GET /captcha`). Programmatic attacks that omit valid single-use CAPTCHA tokens are rejected with `HTTP 403 Forbidden`.
-* **Generic Error Messages:** Failed logins return identical generic messages to prevent username enumeration.
+**Secure authentication**  
+The secure registration controller hashes passwords using argon2.hash(). During login, argon2.verify() checks the submitted password against the stored hash. The login rate limiter is configured for five requests per 60 seconds per IP and returns a “too many login attempts” response when the limit is exceeded (HTTP 429). In addition, an account lockout policy tracks consecutive failed attempts per account and temporarily locks the account for 15 minutes upon five failures (HTTP 423), displayed with a live countdown timer on the frontend. A dynamic SVG CAPTCHA challenge verifies human interaction and blocks automated bots (HTTP 403). Hashing increases the cost of offline password guessing but does not make weak passwords uncrackable.
 
-#### Secure Frontend Interface
-The secure web client (`secure/web`) provides full visual integration:
-* **Interactive CAPTCHA Widget:** Displays dynamically rendered distorted SVG challenges with a one-click refresh button (`🔄`) and uppercase text formatting.
-* **Real-Time Lockout Panel:** Upon receiving an HTTP 423 status, the interface displays an animated lockout warning with a live countdown timer (`MM:SS`) and disables input controls until the lockout period expires.
-
-#### Attack Dashboard and Dispatch Server
-The attack dashboard accepts a target endpoint, target username(s), attack type (dictionary or character-set generator), and wordlist selection. The dispatcher conducts reachability health checks, tracks response times, and automatically handles defensive responses:
-* Detects **HTTP 429**: Logs IP rate limiting and halts the batch.
-* Detects **HTTP 423**: Logs account lockout on the specific user and skips further attempts against that account.
-* Detects **HTTP 403**: Logs bot mitigation triggered by CAPTCHA enforcement and terminates automated guessing.
-
----
+**Attack dashboard and dispatch server**  
+The dashboard accepts a target login URL, one or more usernames, attack type, dictionary filename, character set, and password length. Dictionary mode reads non-empty lines from a selected wordlist; custom mode generates combinations from the chosen characters and length. The dispatch server checks target reachability, sends login requests, records timestamped logs, exposes status/log endpoints, and supports stopping the run. It actively detects and logs HTTP 429 (rate limit), HTTP 423 (account lockout), and HTTP 403 (CAPTCHA challenge). The log list is capped at 500 entries.
 
 ### 6. Running the Project
-
-1. **Environment Setup:** Ensure Node.js 18+ and npm are installed, and verify a local MongoDB instance is active on port `27017`.
-2. **Clone the Repository:**
-   ```bash
-   git clone https://github.com/ahadrov/brute-force-attack-II.git
-   cd brute-force-attack-II
-   ```
-3. **Make Scripts Executable:**
-   ```bash
-   chmod +x *.sh
-   ```
-4. **Install Dependencies:**
-   ```bash
-   ./install.sh
-   ```
-5. **Launch Modules (in three separate terminal tabs):**
-   * Terminal 1: `./start_vulnerable.sh` (Vulnerable API at `:3000`, Web at `:5002`)
-   * Terminal 2: `./start_secure.sh` (Secure API at `:4000`, Web at `:5001`)
-   * Terminal 3: `./start_attack.sh` (Attack API at `:3001`, Dashboard at `:5000`)
-6. **Execution:** Open `http://localhost:5000` in the browser, register test accounts, and conduct controlled comparative attack runs.
-
----
+1. Install Node.js 18+ and npm, and start a local MongoDB service.
+2. Clone the repository and enter its folder: `git clone https://github.com/ahadrov/brute-force-attack-II.git`
+3. Make shell scripts executable where supported: `chmod +x *.sh`
+4. Install dependencies using `./install.sh`.
+5. Start the vulnerable module with `./start_vulnerable.sh`, the secure module with `./start_secure.sh`, and the attack module with `./start_attack.sh`. Keep each running in its own terminal.
+6. Use the dashboard only against the local demonstration backends. Confirm the target URL and use a small test wordlist for a controlled classroom demonstration.
 
 ### 7. Security Concepts and Expected Demonstration
-
-* **Against Vulnerable Backend (`:3000`):** Automated password-guessing runs continuously without interruption until the target credential is found or the wordlist is exhausted.
-* **Against Secure Backend (`:4000`):**
-  * *Bot/CAPTCHA Defense:* Unattended automated attack scripts that do not solve human challenges are blocked with **HTTP 403 Forbidden**.
-  * *Single-IP High-Frequency Flood:* Rapid requests from a single client trigger the IP rate limiter, returning **HTTP 429 Too Many Requests**.
-  * *Distributed Targeted Attack:* If an attacker attempts to circumvent IP rate limits via multiple IP addresses or proxies against a targeted username, the database-backed account lockout intervenes upon the 5th failed attempt, returning **HTTP 423 Locked** and displaying a live countdown timer on the frontend.
-
----
+Against the vulnerable backend, repeated incorrect attempts can continue because no rate limiter is applied. Against the secure backend, repeated attempts from the same IP trigger the configured rate limit (HTTP 429), repeated failed attempts against an individual account trigger account lockout (HTTP 423), and automated requests lacking CAPTCHA verification trigger bot protection (HTTP 403). This is the expected behavior based on the implementation, not a claim of measured test results. Record actual attempt counts, timestamps, HTTP statuses, and screenshots during the live run before reporting performance figures.
 
 ### 8. Limitations and Improvements
-
-* **Addressed in this Version:**
-  * *Account Lockout Implemented:* Mitigated the vulnerability where distributed proxies could bypass single-IP rate limiters.
-  * *Bot Protection Added:* Integrated dynamic SVG CAPTCHA verification to stop programmatic brute-force scripts.
-  * *Frontend Integration Completed:* Replaced placeholder pages with complete glassmorphic authentication components featuring dynamic CAPTCHA and live lockout cooldown timers.
-* **Future Considerations for Enterprise Environments:**
-  * Distributed caching via Redis for multi-instance rate limiting and shared session stores.
-  * Multi-Factor Authentication (MFA / TOTP) and hardware security key support (WebAuthn / FIDO2).
-  * Automated security auditing, telemetry webhooks, and SIEM alerting for repeated anomaly patterns.
+* The secure frontend has been updated with active login/register integration, featuring dynamic CAPTCHA challenge rendering and real-time account lockout countdown timers.
+* Account-based throttling and lockout (HTTP 423) and CAPTCHA bot defense (HTTP 403) have been added to prevent IP-based rate limiter bypass by distributed sources; production systems may further consider MFA and progressive delays.
+* The attack server treats an HTTP-success response as a candidate success, so robust validation should inspect the response body and authentication outcome explicitly.
+* Custom combination generation can become computationally enormous as character-set size and password length increase; use small limits in demonstrations.
+* The installer runs npm audit fix automatically, which may change dependency versions. Review changes and test the project after installation.
+* No benchmark or measured success-rate data is included in this report because no verified execution results were supplied.
 
 ---
+*Brute Force Attack Simulator | Educational Use Only*
+
+<div style="page-break-after: always;"></div>
 
 ### 9. Conclusion
-This updated simulator provides a rigorous, visual demonstration of modern authentication defense. While plain-text storage and unprotected endpoints render systems trivial to breach, combining **Argon2 password hashing**, **IP rate limiting**, **database-backed Account Lockout**, and **full-stack CAPTCHA bot verification** establishes a resilient defense-in-depth posture that completely neutralizes automated brute-force and credential-stuffing attacks.
-
----
+The simulator illustrates why login endpoints need layered protection. Plain-text password storage increases the impact of a database compromise, while Argon2 protects stored password representations, rate limiting restricts rapid repeated login attempts, and account lockout with CAPTCHA verification prevents distributed automated guessing. The project provides a practical classroom comparison, but its results should be supported with screenshots and test logs from a controlled local execution.
 
 ### Source Code
-**GitHub Repository:** [https://github.com/ahadrov/brute-force-attack-II](https://github.com/ahadrov/brute-force-attack-II)  
-*Educational use only. Do not run password-guessing simulations against systems without explicit authorization.*
+GitHub repository: **https://github.com/ahadrov/brute-force-attack-II**  
+Educational use only. Do not run password-guessing simulations against systems without explicit authorization.
 
 ---
 *Brute Force Attack Simulator | Educational Use Only*

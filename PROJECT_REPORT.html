@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>WEB APPLICATION BRUTE FORCE ATTACK SIMULATOR - Project Report</title>
+<style>
+  @page {
+    size: A4 portrait;
+    margin: 20mm 18mm 20mm 18mm;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #1a202c;
+    background: #ffffff;
+    font-size: 10.5pt;
+    line-height: 1.45;
+    margin: 0;
+    padding: 0;
+  }
+  .page {
+    page-break-after: always;
+    position: relative;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    min-height: 250mm;
+  }
+  .page:last-child {
+    page-break-after: avoid;
+  }
+  .page-content {
+    flex: 1;
+  }
+  .page-footer {
+    text-align: center;
+    font-size: 9pt;
+    color: #4a5568;
+    padding-top: 15px;
+    margin-top: auto;
+  }
+  .header-block {
+    text-align: center;
+    margin-bottom: 22px;
+  }
+  h1 {
+    font-size: 17pt;
+    font-weight: 800;
+    color: #0f2b48;
+    letter-spacing: 0.5px;
+    margin: 0 0 10px 0;
+    line-height: 1.25;
+  }
+  .subtitle {
+    font-size: 10.5pt;
+    font-style: italic;
+    color: #4a5568;
+    margin-bottom: 8px;
+  }
+  .meta-line {
+    font-size: 9.5pt;
+    color: #1a202c;
+    margin-bottom: 3px;
+  }
+  .meta-line strong {
+    font-weight: 700;
+  }
+  h2 {
+    font-size: 11.5pt;
+    font-weight: 700;
+    color: #0f172a;
+    margin-top: 14px;
+    margin-bottom: 5px;
+  }
+  h3 {
+    font-size: 10.5pt;
+    font-weight: 700;
+    color: #2563eb;
+    margin-top: 10px;
+    margin-bottom: 3px;
+  }
+  p {
+    margin: 0 0 8px 0;
+    text-align: justify;
+  }
+  ul {
+    margin: 4px 0 10px 0;
+    padding-left: 20px;
+  }
+  li {
+    margin-bottom: 3px;
+  }
+  ol {
+    margin: 4px 0 10px 0;
+    padding-left: 20px;
+  }
+  ol li {
+    margin-bottom: 4px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0 10px 0;
+    font-size: 9pt;
+  }
+  th {
+    background-color: #dbeafe;
+    color: #1e3a8a;
+    font-weight: 700;
+    text-align: left;
+    padding: 5px 8px;
+    border-top: 1px solid #bfdbfe;
+    border-bottom: 1px solid #bfdbfe;
+  }
+  td {
+    padding: 4px 8px;
+    border-bottom: 1px solid #e2e8f0;
+    vertical-align: top;
+  }
+  tr:nth-child(even) td {
+    background-color: #f8fafc;
+  }
+  .port-note {
+    font-size: 9pt;
+    color: #334155;
+    margin-top: 6px;
+  }
+</style>
+</head>
+<body>
+
+<!-- PAGE 1 -->
+<div class="page">
+  <div class="page-content">
+    <div class="header-block">
+      <h1>WEB APPLICATION BRUTE FORCE ATTACK<br>SIMULATOR</h1>
+      <div class="subtitle">Project Report | Educational Cybersecurity Demonstration</div>
+      <div class="meta-line"><strong>Team:</strong> Anmol Khare, Pushpendra Shivhare, Vansh Ray Jain, Dhruv Shrivastava</div>
+      <div class="meta-line"><strong>Submitted to:</strong> Abhay Deep Seth</div>
+    </div>
+
+    <h2>1. Introduction</h2>
+    <p>A brute-force attack repeatedly submits candidate passwords to an authentication endpoint until a valid credential is found or attempts are stopped. This project demonstrates the difference between an intentionally vulnerable login backend and a secured backend. A dashboard lets users configure a target, select a dictionary or generated-password mode, monitor logs, and stop the simulation. The project is intended only for an isolated system owned or explicitly authorized by the operator.</p>
+
+    <h2>2. Objectives</h2>
+    <ul>
+      <li>Demonstrate how unrestricted login attempts expose weak authentication systems.</li>
+      <li>Compare plain-text password storage with Argon2 password hashing.</li>
+      <li>Show IP-based rate limiting and HTTP 429 responses under repeated login attempts.</li>
+      <li>Demonstrate account lockout policies and HTTP 423 responses under repeated failures.</li>
+      <li>Show interactive CAPTCHA bot challenges and HTTP 403 responses halting automated attacks.</li>
+      <li>Provide a live dashboard with configuration controls, status, and timestamped logs.</li>
+      <li>Explain practical controls for reducing brute-force and credential-stuffing risk.</li>
+    </ul>
+
+    <h2>3. Technology Stack</h2>
+    <p>Node.js 18+, Express.js 5, MongoDB with Mongoose 9, Argon2, express-rate-limit, React 19, Vite 8, and dynamic SVG CAPTCHA generator. The attack server uses Node.js fetch to send HTTP POST requests to a selected login endpoint. MongoDB stores the user records.</p>
+
+    <h2>4. System Architecture</h2>
+    <p>The system contains three modules. (1) Vulnerable module: Express authentication API and MongoDB database; passwords are stored and compared as plain text, with no login rate limiter or CAPTCHA. (2) Secure module: a separate Express API and database; passwords are hashed during registration with Argon2 and verified during login, while express-rate-limit allows five login attempts per IP within a 60-second window, an account lockout policy locks accounts after five failed attempts (HTTP 423), and an interactive SVG CAPTCHA blocks automated bots (HTTP 403). (3) Attack module: a React dashboard communicates with a Node.js dispatch API, which sends candidate credentials to the selected target and records status/log messages.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 28%;">Service</th>
+          <th style="width: 22%;">Port</th>
+          <th style="width: 50%;">Purpose</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Attack dashboard</td>
+          <td>5000</td>
+          <td>React configuration and live log interface</td>
+        </tr>
+        <tr>
+          <td>Attack API server</td>
+          <td>3001</td>
+          <td>Starts/stops simulation; exposes status and logs</td>
+        </tr>
+        <tr>
+          <td>Vulnerable backend</td>
+          <td>3000</td>
+          <td>Unprotected login API</td>
+        </tr>
+        <tr>
+          <td>Vulnerable web UI</td>
+          <td>5002 (launch script)</td>
+          <td>Vite frontend development server</td>
+        </tr>
+        <tr>
+          <td>Secure backend</td>
+          <td>4000</td>
+          <td>Argon2 authentication, rate limiting, lockout, and CAPTCHA</td>
+        </tr>
+        <tr>
+          <td>Secure web UI</td>
+          <td>5001 (launch script)</td>
+          <td>Vite frontend development server with CAPTCHA and lockout UI</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="port-note"><strong>Port note:</strong> the start scripts explicitly pass ports 5000, 5001, and 5002 to the three Vite servers. The Vite configuration files do not all define those same ports directly, so the launch scripts are the source of truth when starting the project as documented.</p>
+  </div>
+  <div class="page-footer">Brute Force Attack Simulator | Educational Use Only</div>
+</div>
+
+<!-- PAGE 2 -->
+<div class="page">
+  <div class="page-content">
+    <h2>5. Main Implementation</h2>
+
+    <h3>Vulnerable authentication</h3>
+    <p>The registration controller saves the submitted password directly. Login retrieves the user and compares the submitted password with the stored string. There is no rate-limiting middleware on this route, making repeated attempts possible. This behavior is intentionally insecure and must not be used for real accounts.</p>
+
+    <h3>Secure authentication</h3>
+    <p>The secure registration controller hashes passwords using argon2.hash(). During login, argon2.verify() checks the submitted password against the stored hash. The login rate limiter is configured for five requests per 60 seconds per IP and returns a “too many login attempts” response when the limit is exceeded (HTTP 429). In addition, an account lockout policy tracks consecutive failed attempts per account and temporarily locks the account for 15 minutes upon five failures (HTTP 423), displayed with a live countdown timer on the frontend. A dynamic SVG CAPTCHA challenge verifies human interaction and blocks automated bots (HTTP 403). Hashing increases the cost of offline password guessing but does not make weak passwords uncrackable.</p>
+
+    <h3>Attack dashboard and dispatch server</h3>
+    <p>The dashboard accepts a target login URL, one or more usernames, attack type, dictionary filename, character set, and password length. Dictionary mode reads non-empty lines from a selected wordlist; custom mode generates combinations from the chosen characters and length. The dispatch server checks target reachability, sends login requests, records timestamped logs, exposes status/log endpoints, and supports stopping the run. It actively detects and logs HTTP 429 (rate limit), HTTP 423 (account lockout), and HTTP 403 (CAPTCHA challenge). The log list is capped at 500 entries.</p>
+
+    <h2>6. Running the Project</h2>
+    <ol>
+      <li>Install Node.js 18+ and npm, and start a local MongoDB service.</li>
+      <li>Clone the repository and enter its folder: <code>git clone https://github.com/ahadrov/brute-force-attack-II.git</code></li>
+      <li>Make shell scripts executable where supported: <code>chmod +x *.sh</code></li>
+      <li>Install dependencies using <code>./install.sh</code>.</li>
+      <li>Start the vulnerable module with <code>./start_vulnerable.sh</code>, the secure module with <code>./start_secure.sh</code>, and the attack module with <code>./start_attack.sh</code>. Keep each running in its own terminal.</li>
+      <li>Use the dashboard only against the local demonstration backends. Confirm the target URL and use a small test wordlist for a controlled classroom demonstration.</li>
+    </ol>
+
+    <h2>7. Security Concepts and Expected Demonstration</h2>
+    <p>Against the vulnerable backend, repeated incorrect attempts can continue because no rate limiter is applied. Against the secure backend, repeated attempts from the same IP trigger the configured rate limit (HTTP 429), repeated failed attempts against an individual account trigger account lockout (HTTP 423), and automated requests lacking CAPTCHA verification trigger bot protection (HTTP 403). This is the expected behavior based on the implementation, not a claim of measured test results. Record actual attempt counts, timestamps, HTTP statuses, and screenshots during the live run before reporting performance figures.</p>
+
+    <h2>8. Limitations and Improvements</h2>
+    <ul>
+      <li>The secure frontend has been updated with active login/register integration, featuring dynamic CAPTCHA challenge rendering and real-time account lockout countdown timers.</li>
+      <li>Account-based throttling and lockout (HTTP 423) and CAPTCHA bot defense (HTTP 403) have been added to prevent IP-based rate limiter bypass by distributed sources; production systems may further consider MFA and progressive delays.</li>
+      <li>The attack server treats an HTTP-success response as a candidate success, so robust validation should inspect the response body and authentication outcome explicitly.</li>
+      <li>Custom combination generation can become computationally enormous as character-set size and password length increase; use small limits in demonstrations.</li>
+      <li>The installer runs npm audit fix automatically, which may change dependency versions. Review changes and test the project after installation.</li>
+      <li>No benchmark or measured success-rate data is included in this report because no verified execution results were supplied.</li>
+    </ul>
+  </div>
+  <div class="page-footer">Brute Force Attack Simulator | Educational Use Only</div>
+</div>
+
+<!-- PAGE 3 -->
+<div class="page">
+  <div class="page-content">
+    <h2>9. Conclusion</h2>
+    <p>The simulator illustrates why login endpoints need layered protection. Plain-text password storage increases the impact of a database compromise, while Argon2 protects stored password representations, rate limiting restricts rapid repeated login attempts, and account lockout with CAPTCHA verification prevents distributed automated guessing. The project provides a practical classroom comparison, but its results should be supported with screenshots and test logs from a controlled local execution.</p>
+
+    <h2 style="margin-top: 24px;">Source Code</h2>
+    <p>GitHub repository: <strong>https://github.com/ahadrov/brute-force-attack-II</strong><br>
+    Educational use only. Do not run password-guessing simulations against systems without explicit authorization.</p>
+  </div>
+  <div class="page-footer">Brute Force Attack Simulator | Educational Use Only</div>
+</div>
+
+</body>
+</html>
